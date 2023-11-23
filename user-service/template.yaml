@@ -1,0 +1,170 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Transform: AWS::Serverless-2016-10-31
+Description: "User Service Template"
+
+
+Globals:
+  Function:
+    Runtime: nodejs18.x
+    Timeout: 900
+    MemorySize: 1024
+    CodeUri: app
+    Layers:
+      - !Ref UserServiceLayer
+    # Environment:
+    #   Variables:
+
+Parameters:
+  StageName:
+    Type: String
+    AllowedValues:
+         - "dev"
+         - "prod"
+         - "staggin"
+    Default: "dev"
+
+Resources:
+
+  UserApiGateway:
+    Type: AWS::Serverless::Api
+    Properties:
+      Name: !Sub user-service-${StageName}
+      StageName: !Ref StageName
+      Cors:
+        AllowOrigin: "'*'"
+        AllowMethods: "'GET, PUT, POST'"
+  
+  UserServiceLayer:
+    Type: AWS::Serverless::LayerVersion
+    Properties:
+      ContentUri: ./nodejs.zip
+      LayerName: !Sub "user-service-${StageName}"
+      RetentionPolicy: Delete
+      CompatibleRuntimes:
+        - "nodejs18.x"
+
+  Signup:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: signup
+      Handler: handler.signup
+      Events:
+        SignupApi:
+          Type: Api
+          Properties:
+            Path: /signup
+            Method: POST
+            RestApiId: !Ref UserApiGateway
+  
+  Login:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: login
+      Handler: handler.login
+      Events:
+        LoginApi:
+          Type: Api
+          Properties:
+            Path: /login
+            Method: POST
+            RestApiId: !Ref UserApiGateway
+
+  Verify:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: verify
+      Handler: handler.verify
+      Events:
+        VerifyApi:
+          Type: Api
+          Properties:
+            Path: /verify
+            Method: POST
+            RestApiId: !Ref UserApiGateway
+        VerifyApiGet:
+          Type: Api
+          Properties:
+            Path: /verify
+            Method: GET
+            RestApiId: !Ref UserApiGateway
+
+  Profile:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: profile
+      Handler: handler.profile
+      Events:
+        ProfileApiPOST:
+          Type: Api
+          Properties:
+            Path: /user
+            Method: POST
+            RestApiId: !Ref UserApiGateway
+        ProfileApiPUT:
+          Type: Api
+          Properties:
+            Path: /user
+            Method: PUT
+            RestApiId: !Ref UserApiGateway
+        ProfileApiGET:
+          Type: Api
+          Properties:
+            Path: /user
+            Method: GET
+            RestApiId: !Ref UserApiGateway
+
+  Cart:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: cart
+      Handler: handler.cart
+      Events:
+        CartApiPOST:
+          Type: Api
+          Properties:
+            Path: /cart
+            Method: POST
+            RestApiId: !Ref UserApiGateway
+        CartApiPUT:
+          Type: Api
+          Properties:
+            Path: /cart
+            Method: PUT
+            RestApiId: !Ref UserApiGateway
+        CartApiGET:
+          Type: Api
+          Properties:
+            Path: /cart
+            Method: GET
+            RestApiId: !Ref UserApiGateway
+
+  Payment:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: payment
+      Handler: handler.payment
+      Events:
+        PaymentApiPOST:
+          Type: Api
+          Properties:
+            Path: /payment
+            Method: POST
+            RestApiId: !Ref UserApiGateway
+        PaymentApiPUT:
+          Type: Api
+          Properties:
+            Path: /payment
+            Method: PUT
+            RestApiId: !Ref UserApiGateway
+        PaymentApiGET:
+          Type: Api
+          Properties:
+            Path: /payment
+            Method: GET
+            RestApiId: !Ref UserApiGateway
+
+
+Outputs:
+  ApiGatewayURL:
+    Description: "ApiGateway URL"
+    Value: !Sub https://${UserApiGateway}.execute-api.${AWS::Region}.amazonaws.com/${StageName}
